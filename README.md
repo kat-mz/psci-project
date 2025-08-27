@@ -1,4 +1,4 @@
-## Research Project in R on Correlation between Mental Health and Urbanization
+## Research Project in R on Correlation between Mental Health and Urbanization 
 
 This repository contains the code and supporting files for a data analysis project on county-level statistics using ACS data. It demonstrates data cleaning, analysis, and presentation using R, HTML, and CSS.
 
