@@ -1,0 +1,464 @@
+---
+title: "The Commuter's Emotional Cost: How Transportation Shapes Mental Health"
+author: Katherine Zhang
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    css: style.css
+
+---
+```{r, echo=F, message=FALSE, warning=FALSE}
+#Importing required packages 
+library(tidyverse)
+library(rio)
+
+#Importing datasets
+county.dta <- rio::import("https://github.com/kat-mz/psci-project/raw/main/ACSCountyData.csv", trust = TRUE)
+dep.dta <- rio::import("https://github.com/kat-mz/psci-project/raw/main/cdc_129404_DS1.xlsx", trust = TRUE)
+```
+
+```{r, echo=F, message=FALSE, warning=FALSE}
+#Cleaning dep.dta - keeping important columns
+dep.dta <- dep.dta |> 
+  select(3,6) |> 
+  rename(
+    county.fips = `CountyFIPS code`,
+    dep.percent = `Age-adjusted Prevalence Estimate`
+  )
+
+#Change fips code to integer
+dep.dta$county.fips <- as.integer(dep.dta$county.fips)
+```
+
+```{r, echo=F, message=FALSE, warning=FALSE}
+#Merging datasets
+merged.dta <- county.dta |>
+  left_join(dep.dta, by = "county.fips")
+```
+
+  How Americans get to work may have more to do with how they feel than many realize.
+The visualizations of the analysis done on 3,142 U.S. counties, scatterplots in the figures below illustrate these associations. Group A contains all U.S. counties, while Group B contains 466 urban counties with population densities of over 250 people per square mile.  
+
+  Each point represents a single county, with the x-axis capturing the percentage of commuters using a specific transportation mode and the y-axis reflecting the local adult depression rate. A regression line is drawn to show the national trendline. Sloping downward means less depression with a higher percentage of a specific transportation mode, and vice versa.
+
+  The results are telling. In counties where more residents walk, bike, or take public transit, depression tends to be lower. Where driving dominates, rates of depression rise. These trends hold even after factoring in commute times (longer trips are marked in red) and population density, shown by dot size. The findings, drawn from data published by the American Community Survey and the CDC, suggest that our daily travel habits are tied to emotional well-being.
+
+
+## Driving Ourselves Down
+```{r, echo=F, message=FALSE, warning=FALSE, figures-sidew, fig.show="hold", out.width="50%"}
+cor.val <- cor(merged.dta$percent.car.commute, merged.dta$dep.percent, use = "pairwise.complete.obs")
+
+#Plot for cars
+ggplot(merged.dta, 
+       aes(x = percent.car.commute, 
+           y = dep.percent, 
+           color = average.commute.time,
+           size = population.density)) +
+  geom_point(alpha = 0.5) + 
+  geom_smooth(
+    method = "lm", 
+    color = "darkred",
+    se = FALSE, 
+    show.legend = FALSE) + 
+  labs(
+    title = "Fig 1a: Cars",
+    subtitle = "Exploring the relationship between commuting by car and depression reports",
+    x = "Percentage of Commuting by Car",
+    y = "Depression Percentage",
+    size = "Population Density per Sq. Mile",
+    color = "Avg. Commute in Min."
+  ) + 
+  scale_color_gradient(low = "green", high = "red") +
+  scale_size(
+    range = c(1, 10),
+    breaks = c(10, 10000, 50000),
+    labels = c("10", "10,000", "50,000") ) +
+  theme_minimal() + 
+  theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5),
+        legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.key.size = unit(0.5, "cm")) +
+  guides(
+    color = guide_colourbar(title.position = "top", title.hjust = 0.5),
+    size = guide_legend(
+      title.position = "top", 
+      title.hjust = 0.5, 
+      override.aes = 
+        list(color = "darkblue")
+    )) + 
+  geom_text(aes(x = 15, 
+                  y = 30, 
+                  label = paste("Cor =", round(cor.val, 2))),
+              color = "darkred", size = 5)
+
+#Plot for cars removing non-urban
+urban.dta <- merged.dta[merged.dta$population.density > 250, ]
+
+cor.val <- cor(urban.dta$percent.car.commute, urban.dta$dep.percent, use = "pairwise.complete.obs")
+
+ggplot(urban.dta, 
+       aes(x = percent.car.commute, 
+           y = dep.percent, 
+           color = average.commute.time,
+           size = population.density)) +
+  geom_point(alpha = 0.5) + 
+  geom_smooth(
+    method = "lm", 
+    color = "darkred",
+    se = FALSE, 
+    show.legend = FALSE) + 
+  labs(
+    title = "Fig 1b: Cars",
+    subtitle = "Exploring the relationship between commuting by car and depression reports",
+    x = "Percentage of Commuting by Car",
+    y = "Depression Percentage",
+    size = "Population Density per Sq. Mile",
+    color = "Avg. Commute in Min."
+  ) + 
+  scale_color_gradient(low = "green", high = "red") +
+  scale_size(
+    range = c(1, 10),
+    breaks = c(1000, 10000, 50000),
+    labels = c("1,000", "10,000", "50,000") ) +
+  theme_minimal() + 
+  theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5),
+        legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.key.size = unit(0.5, "cm")) +
+  guides(
+    color = guide_colourbar(title.position = "top", title.hjust = 0.5),
+    size = guide_legend(
+      title.position = "top", 
+      title.hjust = 0.5, 
+      override.aes = 
+        list(color = "darkblue")
+    )) + 
+  geom_text(aes(x = 15, 
+                  y = 28, 
+                  label = paste("Cor =", round(cor.val, 2))),
+              color = "darkred", size = 5)
+
+```
+
+  Cars remain the backbone of American commuting, but the data suggests they may be exacting a psychological toll. Nationally, a positive correlation (r = 0.34) links higher driving rates to higher depression. The pattern persists in urban counties as well, where congestion and commute lengths are often worse.
+  
+  The reasons are likely familiar: long, solitary drives, chronic traffic stress, and the sedentary nature of car travel. In metropolitan areas like Los Angeles, where commutes routinely stretch past 30 minutes, the convenience of a car may be overshadowed by the strain it introduces.
+
+## The Transit Advantage
+```{r, echo=F, message=FALSE, warning=FALSE, figures-sidet, fig.show="hold", out.width="50%"}
+#Plot for public transit
+cor.val <- cor(merged.dta$percent.transit.commute, merged.dta$dep.percent, use = "pairwise.complete.obs")
+
+ggplot(merged.dta, 
+       aes(x = percent.transit.commute, 
+           y = dep.percent, 
+           color = average.commute.time,
+           size = population.density)) +
+  geom_point(alpha = 0.5) + 
+  geom_smooth(
+    method = "lm", 
+    color = "darkred",
+    se = FALSE, 
+    show.legend = FALSE) +  # No regression line in legend
+  labs(
+    title = "Fig 2a: Public Transit",
+    subtitle = "Exploring the relationship between transit commute and depression reports",
+    x = "Percentage of Transit Commute",
+    y = "Depression Percentage",
+    size = "Population Density per Sq. Mile",
+    color = "Avg. Commute in Min."
+  ) + 
+  scale_color_gradient(low = "green", high = "red") +
+  scale_size(
+    range = c(1, 10),
+    breaks = c(10, 10000, 50000),
+    labels = c("10", "10,000", "50,000") ) +
+  theme_minimal() + 
+  theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5),
+        legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.key.size = unit(0.5, "cm")) +
+  guides(
+    color = guide_colourbar(title.position = "top", title.hjust = 0.5),
+    size = guide_legend(
+      title.position = "top", 
+      title.hjust = 0.5, 
+      override.aes = 
+        list(color = "darkblue")
+    )) +
+  geom_text(aes(x = 60, 
+                  y = 30, 
+                  label = paste("Cor =", round(cor.val, 2))),
+              color = "darkred", size = 5)
+
+#Plot for transit commute
+
+cor.val <- cor(urban.dta$percent.transit.commute, urban.dta$dep.percent, use = "pairwise.complete.obs")
+
+ggplot(urban.dta, 
+       aes(x = percent.transit.commute, 
+           y = dep.percent, 
+           color = average.commute.time,
+           size = population.density)) +
+  geom_point(alpha = 0.5) + 
+  geom_smooth(
+    method = "lm", 
+    color = "darkred",
+    se = FALSE, 
+    show.legend = FALSE) +  # No regression line in legend
+  labs(
+    title = "Fig 2b: Public Transit",
+    subtitle = "Exploring the relationship between transit commute and depression reports",
+    x = "Percentage of Transit Commute",
+    y = "Depression Percentage",
+    size = "Population Density per Sq. Mile",
+    color = "Avg. Commute in Min."
+  ) + 
+  scale_color_gradient(low = "green", high = "red") +
+  scale_size(
+    range = c(1, 10),
+    breaks = c(1000, 10000, 50000),
+    labels = c("1,000", "10,000", "50,000") ) +
+  theme_minimal() + 
+  theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5),
+        legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.key.size = unit(0.5, "cm")) +
+  guides(
+    color = guide_colourbar(title.position = "top", title.hjust = 0.5),
+    size = guide_legend(
+      title.position = "top", 
+      title.hjust = 0.5, 
+      override.aes = 
+        list(color = "darkblue")
+    )) +
+  geom_text(aes(x = 55, 
+                  y = 28, 
+                label = paste("Cor =", round(cor.val, 2))),
+              color = "darkred", size = 5)
+
+
+```
+
+  The trend flips with public transportation. Nationwide, the link between transit use and depression is modest (r = -0.21), but it strengthens in urban areas (r = -0.35), where buses, subways, and trains are more accessible.
+  
+  For example, take New York City, where more than 60 percent of residents use public transit. Many studies have credited urbanization to stress and higher mental health risks. But despite New York’s size and intensity, it shows lower adult depression rates than many smaller, car-dependent countries with shorter commutes. 
+  
+  Transit commuting may provide mental health benefits: lower stress, more physical activity, and occasional social interaction, whether it's a nod to the bus driver or a brief chat at the subway platform.
+
+## Mixed Signals from Walking and Biking
+
+```{r, echo=F, message=FALSE, warning=FALSE, figures-sideb, fig.show="hold", out.width="50%"}
+
+#Plot for walking
+cor.val <- cor(merged.dta$percent.walk.commute, merged.dta$dep.percent, use = "pairwise.complete.obs")
+
+ggplot(merged.dta, 
+       aes(x = percent.walk.commute, 
+           y = dep.percent, 
+           color = average.commute.time,
+           size = population.density)) +
+  geom_point(alpha = 0.5) + 
+  geom_smooth(
+    method = "lm", 
+    color = "darkred",
+    se = FALSE, 
+    show.legend = FALSE) +  # No regression line in legend
+  labs(
+    title = "Fig 3a: Walking",
+    subtitle = "Exploring the relationship between walking and depression reports",
+    x = "Percentage of Walking Commute",
+    y = "Depression Percentage",
+    size = "Population Density per Sq. Mile",
+    color = "Avg. Commute in Min."
+  ) + 
+  scale_color_gradient(low = "green", high = "red") +
+  scale_size(
+    range = c(1, 10),
+    breaks = c(10, 10000, 50000),
+    labels = c("10", "10,000", "50,000") ) +
+  theme_minimal() + 
+  theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5),
+        legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.key.size = unit(0.5, "cm")) +
+  guides(
+    color = guide_colourbar(title.position = "top", title.hjust = 0.5),
+    size = guide_legend(
+      title.position = "top", 
+      title.hjust = 0.5, 
+      override.aes = 
+        list(color = "darkblue")
+    ))  +
+  geom_text(aes(x = 45, 
+                  y = 30, 
+                  label = paste("Cor =", round(cor.val, 2))),
+              color = "darkred", size = 5)
+
+
+#Plot for walk-commute
+
+cor.val <- cor(urban.dta$percent.walk.commute, urban.dta$dep.percent, use = "pairwise.complete.obs")
+
+ggplot(urban.dta, 
+       aes(x = percent.walk.commute, 
+           y = dep.percent, 
+           color = average.commute.time,
+           size = population.density)) +
+  geom_point(alpha = 0.5) + 
+  geom_smooth(
+    method = "lm", 
+    color = "darkred",
+    se = FALSE, 
+    show.legend = FALSE) +  # No regression line in legend
+  labs(
+    title = "Fig 3b: Walking",
+    subtitle = "Exploring the relationship between walking and depression reports",
+    x = "Percentage of Walking Commute",
+    y = "Depression Percentage",
+    size = "Population Density per Sq. Mile",
+    color = "Avg. Commute in Min."
+  ) + 
+  scale_color_gradient(low = "green", high = "red") +
+  scale_size(
+    range = c(1, 10),
+    breaks = c(1000, 10000, 50000),
+    labels = c("1,000", "10,000", "50,000") ) +
+  theme_minimal() + 
+  theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5),
+        legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.key.size = unit(0.5, "cm")) +
+  guides(
+    color = guide_colourbar(title.position = "top", title.hjust = 0.5),
+    size = guide_legend(
+      title.position = "top", 
+      title.hjust = 0.5, 
+      override.aes = 
+        list(color = "darkblue")
+    ))  +
+  geom_text(aes(x = 30, 
+                  y = 28, 
+                  label = paste("Cor =", round(cor.val, 2))),
+              color = "darkred", size = 5)
+ 
+#Plot for bike commute
+
+cor.val <- cor(urban.dta$percent.bicycle.commute, urban.dta$dep.percent, use = "pairwise.complete.obs")
+
+ggplot(urban.dta, 
+       aes(x = percent.bicycle.commute, 
+           y = dep.percent, 
+           color = average.commute.time,
+           size = population.density)) +
+  geom_point(alpha = 0.5) + 
+  geom_smooth(
+    method = "lm", 
+    color = "darkred",
+    se = FALSE, 
+    show.legend = FALSE) +  # No regression line in legend
+  labs(
+    title = "Fig 4b: Biking",
+    subtitle = "Exploring the relationship between biking and depression reports",
+    x = "Percentage of Biking Commute",
+    y = "Depression Percentage",
+    size = "Population Density per Sq. Mile",
+    color = "Avg. Commute in Min."
+  ) + 
+  scale_color_gradient(low = "green", high = "red") +
+  scale_size(
+    range = c(1, 10),
+    breaks = c(1000, 10000, 50000),
+    labels = c("1,000", "10,000", "50,000") ) +
+  theme_minimal() + 
+  theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5),
+        legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.key.size = unit(0.5, "cm")) +
+  guides(
+    color = guide_colourbar(title.position = "top", title.hjust = 0.5),
+    size = guide_legend(
+      title.position = "top", 
+      title.hjust = 0.5, 
+      override.aes = 
+        list(color = "darkblue")
+    )) +
+  geom_text(aes(x = 5, 
+                  y = 28, 
+                  label = paste("Cor =", round(cor.val, 2))),
+              color = "darkred", size = 5)
+#Plot for biking
+cor.val <- cor(merged.dta$percent.bicycle.commute, merged.dta$dep.percent, use = "pairwise.complete.obs")
+
+ggplot(merged.dta, 
+       aes(x = percent.bicycle.commute, 
+           y = dep.percent, 
+           color = average.commute.time,
+           size = population.density)) +
+  geom_point(alpha = 0.5) + 
+  geom_smooth(
+    method = "lm", 
+    color = "darkred",
+    se = FALSE, 
+    show.legend = FALSE) +  # No regression line in legend
+  labs(
+    title = "Fig 4a: Biking",
+    subtitle = "Exploring the relationship between biking and depression reports",
+    x = "Percentage of Biking Commute",
+    y = "Depression Percentage",
+    size = "Population Density per Sq. Mile",
+    color = "Avg. Commute in Min."
+  ) + 
+  scale_color_gradient(low = "green", high = "red") +
+  scale_size(
+    range = c(1, 10),
+    breaks = c(10, 10000, 50000),
+    labels = c("10", "10,000", "50,000") ) +
+  theme_minimal() + 
+  theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5),
+        legend.position = "bottom",
+        legend.box = "horizontal",
+        legend.key.size = unit(0.5, "cm")) +
+  guides(
+    color = guide_colourbar(title.position = "top", title.hjust = 0.5),
+    size = guide_legend(
+      title.position = "top", 
+      title.hjust = 0.5, 
+      override.aes = 
+        list(color = "darkblue")
+    ))  +
+  geom_text(aes(x = 10, 
+                  y = 30, 
+                  label = paste("Cor =", round(cor.val, 2))),
+              color = "darkred", size = 5)
+```
+
+  Walking and biking, too, are associated with better mental health. Nationally, walking correlates with lower depression (r = -0.22), as does biking (r = -0.19). But in urban counties, these relationships weaken, walking drops to a near-zero correlation (r = -0.02), and biking to -0.14.
+
+  Why the shift? In rural and suburban areas, walking or biking may reflect a healthy, deliberate lifestyle. In dense cities, however, it may signal economic necessity or limited transit access. A peaceful stroll through Vermont farmland is a far cry from dodging traffic on a Bronx intersection.
+
+## A Public Health Opportunity
+
+  Correlation does not prove causation. But the consistency across thousands of counties signals something worth examining. Transportation infrastructure is not just about mobility, it may be a lever for emotional well-being.
+Policymakers and planners aiming to support public health might consider how people move through their cities. Investments in public transit, bike lanes, and walkable streets could serve dual purposes: reducing traffic and improving mental health.
+
+  For many, commuting is an unavoidable part of the day. But with thoughtful design and policy, it could become a pathway to feeling better.
+
