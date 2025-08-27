@@ -11,6 +11,6 @@ This repository contains the code and supporting files for a data analysis proje
   - CSS styling for the HTML report  
 
 - `data/`  
-  Contains the ACS statistics from each county used in the analysis. *(Note: this is publicly available data from https://www.census.gov/programs-surveys/acs/data.html)*  
+  Contains the ACS statistics from each county used in the analysis. *(Note: this is publicly available data from https://www.census.gov/programs-surveys/acs/data.html)*   
 
 
